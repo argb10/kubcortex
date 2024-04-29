@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.33.0 (3ce457399)
+  labels:
+    io.kompose.service: cortex
+  name: cortex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: cortex
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.33.0 (3ce457399)
+      labels:
+        io.kompose.network/cortex-default: "true"
+        io.kompose.service: cortex
+    spec:
+      containers:
+        - env:
+            - name: job_directory
+          image: thehiveproject/cortex:3.1.1
+          name: cortex
+          ports:
+            - containerPort: 9001
+              hostIP: 0.0.0.0
+              hostPort: 9001
+              protocol: TCP
+        - env:
+            - name: discovery.type
+              value: single-node
+            - name: http.host
+              value: 0.0.0.0
+            - name: script.allowed_types
+              value: inline
+            - name: thread_pool.search.queue_size
+              value: "100000"
+            - name: thread_pool.write.queue_size
+              value: "10000"
+          image: elasticsearch:7.9.1
+          name: elasticsearch
+          volumeMounts:
+            - mountPath: /usr/share/elasticsearch/data
+              name: elasticsearch-claim0
+      restartPolicy: Always
+      volumes:
+        - name: elasticsearch-claim0
+          persistentVolumeClaim:
+            claimName: elasticsearch-claim0
